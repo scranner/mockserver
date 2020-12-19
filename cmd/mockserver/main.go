@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	mockserver.New
+	mockserver
 }
