@@ -1,5 +1,6 @@
 package mockserver
 
-func NewMockServer(config string) {
 
+func NewMockServer(config string) {
+	
 }
