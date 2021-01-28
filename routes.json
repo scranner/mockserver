@@ -1,0 +1,44 @@
+{
+  "/product": {
+    "Response": {
+      "data": {
+        "[Repeat]": true,
+        "[MinRepeats]": 5,
+        "[MaxRepeats]": 10,
+        "id": "[guid]",
+        "name": "[name]",
+        "comments": {
+          "[Repeat]": true,
+          "[MinRepeats]": 1,
+          "[MaxRepeats]": 10,
+          "videoId": "[guid]"
+        }
+      },
+      "Status": "OK"
+    },
+    "ResponseCode": 200
+  },
+  "/products": {
+    "Method": "GET",
+    "Response": {
+      "Limit": 10,
+      "Offset": 0,
+      "TotalResults": 22,
+      "Results": {
+        "[Repeat]": true,
+        "[MinRepeats]": 1,
+        "[MaxRepeats]": 10,
+        "Description":	"[lorum-paragraph]",
+        "ImageUrl":	"[image-url]",
+        "Name":	"[name]",
+        "Id":	"[guid]",
+        "CategoryId":	"[guid]"
+      },
+      "Locale": "en_US",
+      "Includes":	{},
+      "HasErrors": false,
+      "Errors": []
+    },
+    "ResponseCode": 200
+  }
+}

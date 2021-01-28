@@ -3,89 +3,51 @@ package mockserver
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/scranner/mockserver/internal/config"
+	"github.com/scranner/mockserver/internal/route"
+	"github.com/sirupsen/logrus"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
-	"github.com/scranner/mock-server/internal/route"
 )
 
 // Server Object
 type Server struct {
 	Router *mux.Router
-	Config *Config
+	Config *config.Config
 }
-
-// ProcessedResponse we
-type ProcessedResponse struct {
-	Untemplated map[string]string
-	Templated   map[string]func() string
-	Order       []string
-}
-
-// Config Server Config
-type Config struct {
-	Port string
-}
-
 
 // NewMockServer Creates new mock http server based on supplied
 // JSON config
-func NewMockServer(suppliedConfig string) Server {
+func NewMockServer() Server {
+
 	rand.Seed(time.Now().UnixNano())
 	router := mux.NewRouter()
 
-	Route{
-		"/live",
-		RouteDescription{
-			Response{
-				map[string]string{"Status": "OK"},
-				200,
-				false,
-				0,
-				0,
-			},
-		},
-	}.CreateHandler(router)
+	serverConfig, routes := config.LoadConfigFromEnv()
 
-	// &Route{
-	// 	"/ready",
-	// 	RouteDescription{
-	// 		Response{map[string]string{
-	// 			"Status", "OK",
-	// 		},
-	// 			200,
-	// 			false,
-	// 			0,
-	// 			0,
-	// 		},
-	// 	},
-	// }.CreateHandler(router)
+	logger := logrus.New()
+	logger.SetLevel(serverConfig.LogLevel)
 
-	// config, routes := loadConfigFromEnv(suppliedConfig)
+	addProbeHandler("/live", router, logger)
+	addProbeHandler("/ready", router, logger)
 
-	// for _, route := range routes {
-	// 	createHandler(router, route)
-	// }
+	for _, suppliedRoute := range routes {
+		suppliedRoute.CreateHandler(router, logger)
+	}
 
 	return Server{
 		router,
-		&Config{
-			"8080",
-		},
+		&serverConfig,
 	}
-}
-
-// BuildResponse b
-type (r Response) BuildResponse() {
-
 }
 
 // StartServer will start the http server
 func (s *Server) StartServer() {
 	srv := &http.Server{
 		Handler:      s.Router,
-		Addr:         fmt.Sprintf("127.0.0.1:%s", s.Config.Port),
+		Addr:         fmt.Sprintf("0.0.0.0:%s", s.Config.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -93,48 +55,24 @@ func (s *Server) StartServer() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func probeHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "OK")
+func addProbeHandler(path string, r *mux.Router, logger *logrus.Logger) {
+	route.ProcessedRoute{
+		Path: path,
+		Description: route.ProcessedDescription{
+			Response:     route.ProcessedResponse{
+				Key:               "root",
+				Untemplated:       map[string]interface{}{ "Status": "OK" },
+				Templated:         nil,
+				UntemplatedArries: nil,
+				Order:             nil,
+				RepeatConfig:      route.RepeatConfig{
+					Repeat: false,
+					Min:    1,
+					Max:    1,
+				},
+			},
+			ResponseCode: 200,
+			Method:       "GET",
+		},
+	}.CreateHandler(r, logger)
 }
-
-// CreateHandler handle it
-func (r Route) CreateHandler(router *mux.Router) {
-	handleFunc := func(w http.ResponseWriter, r *http.Request) {
-
-		// Create final response object
-		// generate tmeplated valu
-
-		responseToSend := r.Response
-
-		// if route.Description.RepeatResponse {
-		// 	for i := 0; i < rand.Intn(route.Description.MaxRepeats-route.Description.MinRepeats+1)+route.Description.MinRepeats; i++ {
-		// 		responseToSend = append(responseToSend, route.Description.Response)
-		// 	}
-		// } else {
-		// 	responseToSend = append(responseToSend, route.Description.Response)
-		// }
-
-		// for i := 0; i < len(responseToSend); i++ {
-		// 	for j := 0; j < len(responseToSend[i]); i++ {
-		// 		repo := responseToSend[i][j].(func() string)()
-		// 		fmt.Println(repo)
-		// 	}
-		// }
-
-		// for i, response := range responseToSend {
-		// 	for j, k := range response {
-		// 		// responseToSend[i] = string(test1.(func() string)())
-		// 		repo := responseToSend[i][j].(func() string)()
-		// 		fmt.Println(k)
-		// 		responseToSend[i][j] = repo
-		// 	}
-		// }
-
-		b, _ := json.Marshal(responseToSend)
-		w.WriteHeader(route.Description.ResponseCode)
-		fmt.Fprintf(w, string(b))
-	}
-	router.HandleFunc(route.Path, handleFunc)
-}
-
